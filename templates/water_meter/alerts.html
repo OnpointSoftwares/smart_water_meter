@@ -1,0 +1,624 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Alerts - Smart Water Meter{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="bi bi-exclamation-triangle text-primary"></i> Alert Management
+                    </h1>
+                    <p class="text-muted">Monitor and manage system alerts and notifications</p>
+                </div>
+                <button class="btn btn-outline-primary" onclick="refreshAlerts()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Statistics -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-danger border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-danger" id="critical-alerts">-</h2>
+                            <p class="stat-label">Critical Alerts</p>
+                        </div>
+                        <div class="stat-icon text-danger">
+                            <i class="bi bi-exclamation-octagon"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-warning" id="warning-alerts">-</h2>
+                            <p class="stat-label">Warnings</p>
+                        </div>
+                        <div class="stat-icon text-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-info" id="info-alerts">-</h2>
+                            <p class="stat-label">Information</p>
+                        </div>
+                        <div class="stat-icon text-info">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-success" id="resolved-today">-</h2>
+                            <p class="stat-label">Resolved Today</p>
+                        </div>
+                        <div class="stat-icon text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Filters -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <label class="form-label">Alert Type</label>
+                            <select class="form-select" id="alertTypeFilter">
+                                <option value="">All Types</option>
+                                <option value="leak">Leak Detection</option>
+                                <option value="excessive">Excessive Usage</option>
+                                <option value="offline">Device Offline</option>
+                                <option value="maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Severity</label>
+                            <select class="form-select" id="severityFilter">
+                                <option value="">All Severities</option>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="statusFilter">
+                                <option value="">All Alerts</option>
+                                <option value="active">Active Only</option>
+                                <option value="resolved">Resolved Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card hover-card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list text-primary"></i> System Alerts
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-success" onclick="resolveSelected()" id="resolveBtn" disabled>
+                            <i class="bi bi-check-circle"></i> Resolve Selected
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSelected()" id="deleteBtn" disabled>
+                            <i class="bi bi-trash"></i> Delete Selected
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th width="50">
+                                        <input type="checkbox" class="form-check-input" id="selectAll">
+                                    </th>
+                                    <th>Alert</th>
+                                    <th>Device</th>
+                                    <th>Severity</th>
+                                    <th>Type</th>
+                                    <th>Timestamp</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="alerts-tbody">
+                                <tr>
+                                    <td colspan="8" class="text-center py-4">
+                                        <div class="loading-spinner">
+                                            <div class="spinner-border spinner-border-custom text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Details Modal -->
+<div class="modal fade" id="alertDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle"></i> Alert Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="alert-details-content">
+                <!-- Alert details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-success" onclick="resolveCurrentAlert()">
+                    <i class="bi bi-check-circle"></i> Resolve Alert
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let alertsData = [];
+let selectedAlerts = new Set();
+let currentAlert = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadAlerts();
+    
+    // Filter event listeners
+    document.getElementById('alertTypeFilter').addEventListener('change', filterAlerts);
+    document.getElementById('severityFilter').addEventListener('change', filterAlerts);
+    document.getElementById('statusFilter').addEventListener('change', filterAlerts);
+    
+    // Select all checkbox
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.alert-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = this.checked;
+            if (this.checked) {
+                selectedAlerts.add(cb.dataset.alertId);
+            } else {
+                selectedAlerts.delete(cb.dataset.alertId);
+            }
+        });
+        updateActionButtons();
+    });
+});
+
+function loadAlerts() {
+    fetch('/api/alerts/')
+        .then(response => response.json())
+        .then(data => {
+            alertsData = data.results || data;
+            updateAlertStats();
+            displayAlerts(alertsData);
+        })
+        .catch(error => {
+            console.error('Error loading alerts:', error);
+            alertsData = [];
+            updateAlertStats();
+            displayAlerts(alertsData);
+        });
+}
+
+function generateSampleAlerts() {
+    const alertTypes = ['leak', 'excessive', 'offline', 'maintenance'];
+    const severities = ['critical', 'high', 'medium', 'low'];
+    const devices = ['Kitchen Meter', 'Bathroom Meter', 'Garden Meter'];
+    
+    const alerts = [];
+    for (let i = 0; i < 15; i++) {
+        const type = alertTypes[Math.floor(Math.random() * alertTypes.length)];
+        const severity = severities[Math.floor(Math.random() * severities.length)];
+        const device = devices[Math.floor(Math.random() * devices.length)];
+        const isResolved = Math.random() > 0.7;
+        
+        alerts.push({
+            id: `alert_${i + 1}`,
+            type: type,
+            severity: severity,
+            device: device,
+            message: getAlertMessage(type, device),
+            timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+            isResolved: isResolved,
+            resolvedAt: isResolved ? new Date().toISOString() : null,
+            thresholdValue: Math.random() * 100,
+            actualValue: Math.random() * 150
+        });
+    }
+    
+    return alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+}
+
+function getAlertMessage(type, device) {
+    const messages = {
+        leak: `Potential water leak detected on ${device}. Continuous flow detected for over 1 hour.`,
+        excessive: `Excessive water usage detected on ${device}. Daily consumption exceeded threshold.`,
+        offline: `${device} has gone offline and is not responding to requests.`,
+        maintenance: `${device} requires maintenance. Last calibration was over 6 months ago.`
+    };
+    return messages[type] || 'Unknown alert type';
+}
+
+function updateAlertStats() {
+    const stats = {
+        critical: 0,
+        warning: 0,
+        info: 0,
+        resolvedToday: 0
+    };
+    
+    const today = new Date().toDateString();
+    
+    alertsData.forEach(alert => {
+        if (!alert.isResolved) {
+            if (alert.severity === 'critical') stats.critical++;
+            else if (alert.severity === 'high' || alert.severity === 'medium') stats.warning++;
+            else stats.info++;
+        }
+        
+        if (alert.isResolved && alert.resolvedAt && new Date(alert.resolvedAt).toDateString() === today) {
+            stats.resolvedToday++;
+        }
+    });
+    
+    document.getElementById('critical-alerts').textContent = stats.critical;
+    document.getElementById('warning-alerts').textContent = stats.warning;
+    document.getElementById('info-alerts').textContent = stats.info;
+    document.getElementById('resolved-today').textContent = stats.resolvedToday;
+}
+
+function displayAlerts(alerts) {
+    const tbody = document.getElementById('alerts-tbody');
+    
+    if (!alerts || alerts.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="text-center py-4 text-muted">
+                    <i class="bi bi-shield-check display-6"></i>
+                    <p class="mt-2">No alerts found</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = alerts.map(alert => `
+        <tr class="${alert.isResolved ? 'table-secondary' : ''}">
+            <td>
+                <input type="checkbox" class="form-check-input alert-checkbox" 
+                       data-alert-id="${alert.id}" onchange="toggleSelection('${alert.id}')">
+            </td>
+            <td>
+                <div class="d-flex align-items-start">
+                    <div class="me-2">
+                        <i class="bi bi-${getAlertIcon(alert.type)} text-${getSeverityColor(alert.severity)}"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">${getAlertTitle(alert.type)}</div>
+                        <small class="text-muted">${alert.message}</small>
+                    </div>
+                </div>
+            </td>
+            <td>
+                <span class="badge bg-light text-dark">${alert.device}</span>
+            </td>
+            <td>
+                <span class="badge bg-${getSeverityColor(alert.severity)}">
+                    ${alert.severity.toUpperCase()}
+                </span>
+            </td>
+            <td>
+                <span class="badge bg-secondary">${alert.type}</span>
+            </td>
+            <td>
+                <small class="text-muted">${formatTimestamp(alert.timestamp)}</small>
+            </td>
+            <td>
+                ${alert.isResolved ? 
+                    '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Resolved</span>' : 
+                    '<span class="badge bg-warning"><i class="bi bi-exclamation-triangle"></i> Active</span>'
+                }
+            </td>
+            <td>
+                <div class="btn-group" role="group">
+                    <button class="btn btn-sm btn-outline-primary" onclick="viewAlert('${alert.id}')">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                    ${!alert.isResolved ? `
+                    <button class="btn btn-sm btn-outline-success" onclick="resolveAlert('${alert.id}')">
+                        <i class="bi bi-check"></i>
+                    </button>
+                    ` : ''}
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAlert('${alert.id}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getAlertIcon(type) {
+    const icons = {
+        leak: 'droplet-fill',
+        excessive: 'graph-up-arrow',
+        offline: 'wifi-off',
+        maintenance: 'tools'
+    };
+    return icons[type] || 'exclamation-triangle';
+}
+
+function getAlertTitle(type) {
+    const titles = {
+        leak: 'Water Leak Detected',
+        excessive: 'Excessive Usage',
+        offline: 'Device Offline',
+        maintenance: 'Maintenance Required'
+    };
+    return titles[type] || 'Unknown Alert';
+}
+
+function getSeverityColor(severity) {
+    const colors = {
+        critical: 'danger',
+        high: 'danger',
+        medium: 'warning',
+        low: 'info'
+    };
+    return colors[severity] || 'secondary';
+}
+
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffHours < 1) {
+        return `${Math.round(diffHours * 60)} min ago`;
+    } else if (diffHours < 24) {
+        return `${Math.round(diffHours)} hours ago`;
+    } else {
+        return date.toLocaleDateString();
+    }
+}
+
+function filterAlerts() {
+    const typeFilter = document.getElementById('alertTypeFilter').value;
+    const severityFilter = document.getElementById('severityFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    let filteredAlerts = alertsData;
+    
+    if (typeFilter) {
+        filteredAlerts = filteredAlerts.filter(alert => alert.type === typeFilter);
+    }
+    
+    if (severityFilter) {
+        filteredAlerts = filteredAlerts.filter(alert => alert.severity === severityFilter);
+    }
+    
+    if (statusFilter === 'active') {
+        filteredAlerts = filteredAlerts.filter(alert => !alert.isResolved);
+    } else if (statusFilter === 'resolved') {
+        filteredAlerts = filteredAlerts.filter(alert => alert.isResolved);
+    }
+    
+    displayAlerts(filteredAlerts);
+}
+
+function toggleSelection(alertId) {
+    const checkbox = document.querySelector(`[data-alert-id="${alertId}"]`);
+    if (checkbox.checked) {
+        selectedAlerts.add(alertId);
+    } else {
+        selectedAlerts.delete(alertId);
+    }
+    updateActionButtons();
+}
+
+function updateActionButtons() {
+    const resolveBtn = document.getElementById('resolveBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const hasSelection = selectedAlerts.size > 0;
+    
+    resolveBtn.disabled = !hasSelection;
+    deleteBtn.disabled = !hasSelection;
+}
+
+function viewAlert(alertId) {
+    const alert = alertsData.find(a => a.id === alertId);
+    if (!alert) return;
+    
+    currentAlert = alert;
+    
+    const content = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Alert Information</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Type:</strong></td><td>${getAlertTitle(alert.type)}</td></tr>
+                    <tr><td><strong>Severity:</strong></td><td><span class="badge bg-${getSeverityColor(alert.severity)}">${alert.severity.toUpperCase()}</span></td></tr>
+                    <tr><td><strong>Device:</strong></td><td>${alert.device}</td></tr>
+                    <tr><td><strong>Timestamp:</strong></td><td>${new Date(alert.timestamp).toLocaleString()}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Details</h6>
+                <table class="table table-sm">
+                    <tr><td><strong>Status:</strong></td><td>${alert.isResolved ? 'Resolved' : 'Active'}</td></tr>
+                    <tr><td><strong>Threshold:</strong></td><td>${alert.thresholdValue.toFixed(2)}</td></tr>
+                    <tr><td><strong>Actual Value:</strong></td><td>${alert.actualValue.toFixed(2)}</td></tr>
+                    ${alert.isResolved ? `<tr><td><strong>Resolved:</strong></td><td>${new Date(alert.resolvedAt).toLocaleString()}</td></tr>` : ''}
+                </table>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <div class="row">
+            <div class="col-12">
+                <h6>Message</h6>
+                <div class="alert alert-${getSeverityColor(alert.severity)} border-start border-${getSeverityColor(alert.severity)} border-4">
+                    ${alert.message}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('alert-details-content').innerHTML = content;
+    new bootstrap.Modal(document.getElementById('alertDetailsModal')).show();
+}
+
+function resolveAlert(alertId) {
+    const alert = alertsData.find(a => a.id === alertId);
+    if (alert && !alert.isResolved) {
+        alert.isResolved = true;
+        alert.resolvedAt = new Date().toISOString();
+        
+        showNotification(`Alert ${alertId} resolved successfully!`, 'success');
+        updateAlertStats();
+        displayAlerts(alertsData);
+    }
+}
+
+function resolveCurrentAlert() {
+    if (currentAlert && !currentAlert.isResolved) {
+        resolveAlert(currentAlert.id);
+        bootstrap.Modal.getInstance(document.getElementById('alertDetailsModal')).hide();
+    }
+}
+
+function deleteAlert(alertId) {
+    if (confirm('Are you sure you want to delete this alert?')) {
+        alertsData = alertsData.filter(a => a.id !== alertId);
+        selectedAlerts.delete(alertId);
+        
+        showNotification(`Alert ${alertId} deleted successfully!`, 'success');
+        updateAlertStats();
+        displayAlerts(alertsData);
+        updateActionButtons();
+    }
+}
+
+function resolveSelected() {
+    if (selectedAlerts.size === 0) return;
+    
+    if (confirm(`Resolve ${selectedAlerts.size} selected alert(s)?`)) {
+        selectedAlerts.forEach(alertId => {
+            const alert = alertsData.find(a => a.id === alertId);
+            if (alert && !alert.isResolved) {
+                alert.isResolved = true;
+                alert.resolvedAt = new Date().toISOString();
+            }
+        });
+        
+        selectedAlerts.clear();
+        document.getElementById('selectAll').checked = false;
+        
+        showNotification('Selected alerts resolved successfully!', 'success');
+        updateAlertStats();
+        displayAlerts(alertsData);
+        updateActionButtons();
+    }
+}
+
+function deleteSelected() {
+    if (selectedAlerts.size === 0) return;
+    
+    if (confirm(`Delete ${selectedAlerts.size} selected alert(s)?`)) {
+        alertsData = alertsData.filter(a => !selectedAlerts.has(a.id));
+        selectedAlerts.clear();
+        document.getElementById('selectAll').checked = false;
+        
+        showNotification('Selected alerts deleted successfully!', 'success');
+        updateAlertStats();
+        displayAlerts(alertsData);
+        updateActionButtons();
+    }
+}
+
+function refreshAlerts() {
+    const button = event.target.closest('button');
+    const icon = button.querySelector('i');
+    
+    icon.classList.add('fa-spin');
+    button.disabled = true;
+    
+    loadAlerts();
+    
+    setTimeout(() => {
+        icon.classList.remove('fa-spin');
+        button.disabled = false;
+    }, 1000);
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 90px; right: 20px; z-index: 1050; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

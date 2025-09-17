@@ -1,0 +1,421 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Smart Water Meter{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-speedometer2 text-primary"></i> Dashboard
+            </h1>
+            <p class="text-muted">Real-time water consumption monitoring and analytics</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4" id="stats-cards">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-primary" id="total-devices">-</h2>
+                            <p class="stat-label">Total Devices</p>
+                        </div>
+                        <div class="stat-icon text-primary">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-success" id="active-devices">-</h2>
+                            <p class="stat-label">Active Devices</p>
+                        </div>
+                        <div class="stat-icon text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-info" id="today-consumption">-</h2>
+                            <p class="stat-label">Today's Usage (L)</p>
+                        </div>
+                        <div class="stat-icon text-info">
+                            <i class="bi bi-droplet"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h2 class="stat-number text-warning" id="monthly-cost">-</h2>
+                            <p class="stat-label">Monthly Cost ($)</p>
+                        </div>
+                        <div class="stat-icon text-warning">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-xl-8 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up text-primary"></i> Water Consumption Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="consumptionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart text-success"></i> Device Status
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="deviceStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity Row -->
+    <div class="row">
+        <div class="col-xl-8 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history text-info"></i> Recent Readings
+                    </h5>
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshReadings()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="readings-table">
+                            <thead>
+                                <tr>
+                                    <th>Device</th>
+                                    <th>Location</th>
+                                    <th>Flow Rate</th>
+                                    <th>Consumption</th>
+                                    <th>Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="readings-tbody">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="loading-spinner">
+                                            <div class="spinner-border spinner-border-custom text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-triangle text-danger"></i> Active Alerts
+                        <span class="badge bg-danger ms-2" id="alerts-count">0</span>
+                    </h5>
+                    <a href="{% url 'water_meter:alerts' %}" class="btn btn-sm btn-outline-danger">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                    <div id="alerts-container">
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-shield-check display-6"></i>
+                            <p class="mt-2">No active alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Dashboard JavaScript
+let consumptionChart, deviceStatusChart;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadDashboardData();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadDashboardData, 30000);
+});
+
+function initializeCharts() {
+    // Consumption Trend Chart
+    const consumptionCtx = document.getElementById('consumptionChart').getContext('2d');
+    consumptionChart = new Chart(consumptionCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Water Consumption (L)',
+                data: [],
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Liters'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time'
+                    }
+                }
+            }
+        }
+    });
+
+    // Device Status Chart
+    const deviceStatusCtx = document.getElementById('deviceStatusChart').getContext('2d');
+    deviceStatusChart = new Chart(deviceStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'Offline', 'Warning'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: ['#198754', '#dc3545', '#ffc107'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function loadDashboardData() {
+    fetch('/api/dashboard/stats/')
+        .then(response => response.json())
+        .then(data => {
+            updateDashboard(data);
+        })
+        .catch(error => {
+            console.error('Error loading dashboard data:', error);
+            const fallbackData = {
+                total_consumption: 0,
+                current_flow: 0,
+                active_devices: 0,
+                alerts_count: 0,
+                daily_usage: [],
+                weekly_usage: [],
+                monthly_usage: [],
+                recent_alerts: []
+            };
+            updateDashboard(fallbackData);
+        });
+}
+
+function updateDashboard(data) {
+    updateStatistics(data);
+    updateCharts(data);
+    updateRecentReadings(data.recent_readings);
+    updateAlerts(data.recent_alerts);
+}
+
+function updateStatistics(data) {
+    document.getElementById('total-devices').textContent = data.total_devices;
+    document.getElementById('active-devices').textContent = data.active_devices;
+    document.getElementById('today-consumption').textContent = data.total_consumption_today.toFixed(2);
+    document.getElementById('monthly-cost').textContent = data.monthly_cost.toFixed(2);
+}
+
+function updateCharts(data) {
+    // Update consumption chart with recent readings
+    if (data.latest_readings && data.latest_readings.length > 0) {
+        const labels = data.latest_readings.slice(-10).map(reading => 
+            new Date(reading.timestamp).toLocaleTimeString()
+        );
+        const consumptionData = data.latest_readings.slice(-10).map(reading => 
+            reading.total_consumption
+        );
+        
+        consumptionChart.data.labels = labels;
+        consumptionChart.data.datasets[0].data = consumptionData;
+        consumptionChart.update();
+    }
+
+    // Update device status chart
+    const activeDevices = data.active_devices;
+    const totalDevices = data.total_devices;
+    const offlineDevices = totalDevices - activeDevices;
+    
+    deviceStatusChart.data.datasets[0].data = [activeDevices, offlineDevices, 0];
+    deviceStatusChart.update();
+}
+
+function updateRecentReadings(readings) {
+    const tbody = document.getElementById('readings-tbody');
+    
+    if (!readings || readings.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center py-4 text-muted">
+                    No recent readings available
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = readings.slice(0, 10).map(reading => `
+        <tr>
+            <td>
+                <div class="device-status">
+                    <span class="status-indicator status-online"></span>
+                    <strong>${reading.device_name}</strong>
+                </div>
+            </td>
+            <td>${reading.device_location}</td>
+            <td>${reading.flow_rate.toFixed(2)} L/min</td>
+            <td>${reading.total_consumption.toFixed(2)} L</td>
+            <td>${new Date(reading.timestamp).toLocaleString()}</td>
+        </tr>
+    `).join('');
+}
+
+function updateAlerts(alerts) {
+    const container = document.getElementById('alerts-container');
+    const countBadge = document.getElementById('alerts-count');
+    
+    countBadge.textContent = alerts.length;
+    
+    if (!alerts || alerts.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-shield-check display-6"></i>
+                <p class="mt-2">No active alerts</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = alerts.map(alert => `
+        <div class="alert-item alert-${alert.severity} p-3 mb-2">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="mb-1">${alert.device_name}</h6>
+                    <p class="mb-1 small">${alert.message}</p>
+                    <small class="text-muted">${new Date(alert.timestamp).toLocaleString()}</small>
+                </div>
+                <span class="badge bg-${getSeverityColor(alert.severity)}">${alert.severity}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function getSeverityColor(severity) {
+    const colors = {
+        'high': 'danger',
+        'medium': 'warning',
+        'low': 'info',
+        'critical': 'danger'
+    };
+    return colors[severity] || 'secondary';
+}
+
+function refreshReadings() {
+    const button = event.target.closest('button');
+    const icon = button.querySelector('i');
+    
+    icon.classList.add('fa-spin');
+    button.disabled = true;
+    
+    loadDashboardData();
+    
+    setTimeout(() => {
+        icon.classList.remove('fa-spin');
+        button.disabled = false;
+    }, 1000);
+}
+
+function showError(message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alertDiv, container.firstChild);
+}
+</script>
+{% endblock %}

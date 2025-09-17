@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics - Smart Water Meter{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-graph-up text-primary"></i> Analytics & Reports
+            </h1>
+            <p class="text-muted">Detailed water consumption analysis and insights</p>
+        </div>
+    </div>
+
+    <!-- Time Period Selector -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h6 class="mb-0">Analysis Period</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="timePeriod" id="period7days" checked>
+                                <label class="btn btn-outline-primary" for="period7days">7 Days</label>
+                                
+                                <input type="radio" class="btn-check" name="timePeriod" id="period30days">
+                                <label class="btn btn-outline-primary" for="period30days">30 Days</label>
+                                
+                                <input type="radio" class="btn-check" name="timePeriod" id="period90days">
+                                <label class="btn btn-outline-primary" for="period90days">90 Days</label>
+                                
+                                <input type="radio" class="btn-check" name="timePeriod" id="period1year">
+                                <label class="btn btn-outline-primary" for="period1year">1 Year</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <div class="col-xl-8 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up text-primary"></i> Water Consumption Trend
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="consumptionTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart text-success"></i> Usage Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="usageDistributionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row mb-4">
+        <div class="col-xl-6 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart text-info"></i> Hourly Usage Pattern
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="hourlyPatternChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar3 text-warning"></i> Weekly Pattern
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="weeklyPatternChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-primary" id="avg-daily">-</h3>
+                            <p class="stat-label">Avg Daily Usage (L)</p>
+                        </div>
+                        <div class="stat-icon text-primary">
+                            <i class="bi bi-droplet"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-success" id="peak-usage">-</h3>
+                            <p class="stat-label">Peak Usage (L)</p>
+                        </div>
+                        <div class="stat-icon text-success">
+                            <i class="bi bi-arrow-up"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-info" id="efficiency-score">-</h3>
+                            <p class="stat-label">Efficiency Score</p>
+                        </div>
+                        <div class="stat-icon text-info">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-warning" id="cost-savings">-</h3>
+                            <p class="stat-label">Cost Savings ($)</p>
+                        </div>
+                        <div class="stat-icon text-warning">
+                            <i class="bi bi-piggy-bank"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Insights and Recommendations -->
+    <div class="row">
+        <div class="col-xl-8 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightbulb text-warning"></i> Insights & Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="insights-container">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="alert alert-info border-start border-info border-4">
+                                    <h6><i class="bi bi-info-circle"></i> Usage Pattern</h6>
+                                    <p class="mb-0">Your peak usage occurs between 7-9 AM and 6-8 PM. Consider spreading usage throughout the day for better efficiency.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="alert alert-success border-start border-success border-4">
+                                    <h6><i class="bi bi-check-circle"></i> Conservation</h6>
+                                    <p class="mb-0">Great job! You've reduced water usage by 15% compared to last month.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="alert alert-warning border-start border-warning border-4">
+                                    <h6><i class="bi bi-exclamation-triangle"></i> Potential Leak</h6>
+                                    <p class="mb-0">Detected continuous low-level usage during night hours. Check for potential leaks.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="alert alert-primary border-start border-primary border-4">
+                                    <h6><i class="bi bi-target"></i> Goal</h6>
+                                    <p class="mb-0">You're 85% towards your monthly conservation goal of 500L reduction.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 mb-3">
+            <div class="card hover-card">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-download text-primary"></i> Export Reports
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="exportReport('pdf')">
+                            <i class="bi bi-file-pdf"></i> Export as PDF
+                        </button>
+                        <button class="btn btn-outline-success" onclick="exportReport('excel')">
+                            <i class="bi bi-file-excel"></i> Export as Excel
+                        </button>
+                        <button class="btn btn-outline-info" onclick="exportReport('csv')">
+                            <i class="bi bi-file-csv"></i> Export as CSV
+                        </button>
+                        <hr>
+                        <button class="btn btn-primary" onclick="scheduleReport()">
+                            <i class="bi bi-calendar-event"></i> Schedule Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let charts = {};
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadAnalyticsData();
+    
+    // Period change handlers
+    document.querySelectorAll('input[name="timePeriod"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            loadAnalyticsData();
+        });
+    });
+});
+
+function initializeCharts() {
+    // Consumption Trend Chart
+    const trendCtx = document.getElementById('consumptionTrendChart').getContext('2d');
+    charts.trend = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Daily Usage (L)',
+                data: [],
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Usage Distribution Chart
+    const distributionCtx = document.getElementById('usageDistributionChart').getContext('2d');
+    charts.distribution = new Chart(distributionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Kitchen', 'Bathroom', 'Laundry', 'Garden'],
+            datasets: [{
+                data: [40, 30, 20, 10],
+                backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Hourly Pattern Chart
+    const hourlyCtx = document.getElementById('hourlyPatternChart').getContext('2d');
+    charts.hourly = new Chart(hourlyCtx, {
+        type: 'bar',
+        data: {
+            labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+            datasets: [{
+                label: 'Usage (L)',
+                data: [],
+                backgroundColor: 'rgba(13, 202, 240, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Weekly Pattern Chart
+    const weeklyCtx = document.getElementById('weeklyPatternChart').getContext('2d');
+    charts.weekly = new Chart(weeklyCtx, {
+        type: 'radar',
+        data: {
+            labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            datasets: [{
+                label: 'Average Usage',
+                data: [],
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.2)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function loadAnalyticsData() {
+    const period = document.querySelector('input[name="timePeriod"]:checked').id;
+    
+    // Generate sample data based on period
+    generateSampleData(period);
+    updateStatistics();
+}
+
+function generateSampleData(period) {
+    let days = 7;
+    if (period === 'period30days') days = 30;
+    else if (period === 'period90days') days = 90;
+    else if (period === 'period1year') days = 365;
+
+    // Trend data
+    const trendLabels = [];
+    const trendData = [];
+    for (let i = days - 1; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        trendLabels.push(date.toLocaleDateString());
+        trendData.push(Math.random() * 100 + 50);
+    }
+    
+    charts.trend.data.labels = trendLabels;
+    charts.trend.data.datasets[0].data = trendData;
+    charts.trend.update();
+
+    // Hourly pattern data
+    const hourlyData = Array.from({length: 24}, () => Math.random() * 20 + 5);
+    // Simulate higher usage in morning and evening
+    hourlyData[7] = Math.random() * 30 + 20;  // 7 AM
+    hourlyData[8] = Math.random() * 25 + 15;  // 8 AM
+    hourlyData[18] = Math.random() * 35 + 25; // 6 PM
+    hourlyData[19] = Math.random() * 30 + 20; // 7 PM
+    
+    charts.hourly.data.datasets[0].data = hourlyData;
+    charts.hourly.update();
+
+    // Weekly pattern data
+    const weeklyData = Array.from({length: 7}, () => Math.random() * 100 + 50);
+    charts.weekly.data.datasets[0].data = weeklyData;
+    charts.weekly.update();
+}
+
+function updateStatistics() {
+    // Generate sample statistics
+    document.getElementById('avg-daily').textContent = (Math.random() * 50 + 75).toFixed(1);
+    document.getElementById('peak-usage').textContent = (Math.random() * 30 + 120).toFixed(1);
+    document.getElementById('efficiency-score').textContent = Math.floor(Math.random() * 20 + 75) + '%';
+    document.getElementById('cost-savings').textContent = (Math.random() * 20 + 10).toFixed(2);
+}
+
+function exportReport(format) {
+    showNotification(`Exporting report as ${format.toUpperCase()}...`, 'info');
+    
+    // Simulate export process
+    setTimeout(() => {
+        showNotification(`Report exported successfully as ${format.toUpperCase()}!`, 'success');
+    }, 2000);
+}
+
+function scheduleReport() {
+    showNotification('Report scheduling feature would be implemented here.', 'info');
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 90px; right: 20px; z-index: 1050; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

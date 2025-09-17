@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Billing - Smart Water Meter{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-0">
+                <i class="bi bi-receipt text-primary"></i> Billing & Usage Reports
+            </h1>
+            <p class="text-muted">Track your water consumption costs and billing history</p>
+        </div>
+    </div>
+
+    <!-- Current Month Summary -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-primary" id="current-usage">-</h3>
+                            <p class="stat-label">Current Month Usage (L)</p>
+                        </div>
+                        <div class="stat-icon text-primary">
+                            <i class="bi bi-droplet"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-success" id="current-cost">-</h3>
+                            <p class="stat-label">Current Month Cost ($)</p>
+                        </div>
+                        <div class="stat-icon text-success">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-info" id="avg-daily">-</h3>
+                            <p class="stat-label">Avg Daily Usage (L)</p>
+                        </div>
+                        <div class="stat-icon text-info">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="stat-number text-warning" id="rate-per-liter">$0.002</h3>
+                            <p class="stat-label">Rate per Liter</p>
+                        </div>
+                        <div class="stat-icon text-warning">
+                            <i class="bi bi-calculator"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Usage Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card hover-card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart text-primary"></i> Monthly Usage Comparison
+                    </h5>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="chartPeriod" id="chart6months" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="chart6months">6 Months</label>
+                        
+                        <input type="radio" class="btn-check" name="chartPeriod" id="chart1year">
+                        <label class="btn btn-outline-primary btn-sm" for="chart1year">1 Year</label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="usageComparisonChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Billing History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card hover-card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history text-info"></i> Billing History
+                    </h5>
+                    <button class="btn btn-primary btn-sm" onclick="generateBill()">
+                        <i class="bi bi-plus-circle"></i> Generate Current Bill
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Device</th>
+                                    <th>Usage (L)</th>
+                                    <th>Cost</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="billing-history">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="loading-spinner">
+                                            <div class="spinner-border spinner-border-custom text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bill Details Modal -->
+<div class="modal fade" id="billModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-receipt"></i> Bill Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="bill-details">
+                <!-- Bill details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="downloadBill()">
+                    <i class="bi bi-download"></i> Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let usageChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeUsageChart();
+    loadBillingData();
+    
+    // Chart period change handlers
+    document.querySelectorAll('input[name="chartPeriod"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            loadUsageChart(this.id === 'chart1year' ? 12 : 6);
+        });
+    });
+});
+
+function initializeUsageChart() {
+    const ctx = document.getElementById('usageComparisonChart').getContext('2d');
+    usageChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Water Usage (L)',
+                data: [],
+                backgroundColor: 'rgba(13, 110, 253, 0.8)',
+                borderColor: '#0d6efd',
+                borderWidth: 1
+            }, {
+                label: 'Cost ($)',
+                data: [],
+                backgroundColor: 'rgba(25, 135, 84, 0.8)',
+                borderColor: '#198754',
+                borderWidth: 1,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Usage (Liters)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Cost ($)'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+}
+
+function loadBillingData() {
+    // Load current month statistics
+    fetch('/api/dashboard/stats/')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('current-usage').textContent = data.total_consumption_month.toFixed(2);
+            document.getElementById('current-cost').textContent = data.monthly_cost.toFixed(2);
+            
+            // Calculate average daily usage
+            const daysInMonth = new Date().getDate();
+            const avgDaily = data.total_consumption_month / daysInMonth;
+            document.getElementById('avg-daily').textContent = avgDaily.toFixed(2);
+        })
+        .catch(error => console.error('Error loading billing data:', error));
+    
+    // Load usage chart
+    loadUsageChart(6);
+    
+    // Load billing history
+    loadBillingHistory();
+}
+
+function loadUsageChart(months) {
+    // Simulate monthly data - in real implementation, fetch from API
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonth = new Date().getMonth();
+    
+    const labels = [];
+    const usageData = [];
+    const costData = [];
+    
+    for (let i = months - 1; i >= 0; i--) {
+        const monthIndex = (currentMonth - i + 12) % 12;
+        labels.push(monthNames[monthIndex]);
+        
+        // Simulate data - replace with actual API calls
+        const usage = Math.random() * 1000 + 500;
+        const cost = usage * 0.002;
+        
+        usageData.push(usage);
+        costData.push(cost);
+    }
+    
+    usageChart.data.labels = labels;
+    usageChart.data.datasets[0].data = usageData;
+    usageChart.data.datasets[1].data = costData;
+    usageChart.update();
+}
+
+function loadBillingHistory() {
+    // Simulate billing history - replace with actual API call
+    const tbody = document.getElementById('billing-history');
+    
+    // Generate sample billing data
+    const sampleBills = [
+        {
+            period: 'Dec 2024',
+            device: 'Kitchen Meter',
+            usage: 850.5,
+            cost: 1.70,
+            status: 'Paid',
+            dueDate: '2025-01-15',
+            isPaid: true
+        },
+        {
+            period: 'Nov 2024',
+            device: 'Kitchen Meter',
+            usage: 920.3,
+            cost: 1.84,
+            status: 'Paid',
+            dueDate: '2024-12-15',
+            isPaid: true
+        },
+        {
+            period: 'Oct 2024',
+            device: 'Kitchen Meter',
+            usage: 780.2,
+            cost: 1.56,
+            status: 'Paid',
+            dueDate: '2024-11-15',
+            isPaid: true
+        }
+    ];
+    
+    tbody.innerHTML = sampleBills.map(bill => `
+        <tr>
+            <td><strong>${bill.period}</strong></td>
+            <td>${bill.device}</td>
+            <td>${bill.usage.toFixed(2)} L</td>
+            <td>$${bill.cost.toFixed(2)}</td>
+            <td>
+                <span class="badge bg-${bill.isPaid ? 'success' : 'warning'}">
+                    ${bill.status}
+                </span>
+            </td>
+            <td>${new Date(bill.dueDate).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewBill('${bill.period}')">
+                    <i class="bi bi-eye"></i> View
+                </button>
+                ${!bill.isPaid ? `
+                <button class="btn btn-sm btn-success ms-1" onclick="payBill('${bill.period}')">
+                    <i class="bi bi-credit-card"></i> Pay
+                </button>
+                ` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function generateBill() {
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+    button.disabled = true;
+    
+    // Simulate bill generation
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        showNotification('Current month bill generated successfully!', 'success');
+        loadBillingHistory(); // Refresh the table
+    }, 2000);
+}
+
+function viewBill(period) {
+    // Generate bill details
+    const billDetails = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Billing Period</h6>
+                <p>${period}</p>
+                
+                <h6>Device</h6>
+                <p>Kitchen Water Meter (DEVICE_001)</p>
+                
+                <h6>Rate</h6>
+                <p>$0.002 per liter</p>
+            </div>
+            <div class="col-md-6">
+                <h6>Total Usage</h6>
+                <p>850.5 liters</p>
+                
+                <h6>Total Cost</h6>
+                <p class="h4 text-success">$1.70</p>
+                
+                <h6>Status</h6>
+                <p><span class="badge bg-success">Paid</span></p>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <div class="row">
+            <div class="col-12">
+                <h6>Daily Breakdown</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Usage (L)</th>
+                                <th>Cost ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Dec 1</td><td>28.5</td><td>0.057</td></tr>
+                            <tr><td>Dec 2</td><td>31.2</td><td>0.062</td></tr>
+                            <tr><td>Dec 3</td><td>25.8</td><td>0.052</td></tr>
+                            <tr class="text-muted"><td colspan="3">... (showing first 3 days)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('bill-details').innerHTML = billDetails;
+    new bootstrap.Modal(document.getElementById('billModal')).show();
+}
+
+function payBill(period) {
+    if (confirm(`Pay bill for ${period}?`)) {
+        showNotification(`Payment processed for ${period}`, 'success');
+        loadBillingHistory();
+    }
+}
+
+function downloadBill() {
+    showNotification('Bill download started', 'info');
+    // In real implementation, this would generate and download a PDF
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 90px; right: 20px; z-index: 1050; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+venv
+.env
+arduino_code
+smartwatermeter.db
+smartwatermeter.sqlite3
